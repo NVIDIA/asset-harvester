@@ -1,0 +1,29 @@
+# Core dependencies
+torch==2.10.0
+torchvision
+# 0.37+ adds autoencoder_rae which requires transformers>=4.48 (conflicts with C-RADIO pin)
+diffusers>=0.33.0,<0.37.0
+# C-RADIO compat patch (patches/cradio_compat.py) required for >=4.48; breaks at 5.0 (post_init)
+transformers==4.48.3
+accelerate>=0.25.0
+huggingface_hub>=0.20.0
+
+# Image processing
+Pillow>=12.1.1
+imageio>=2.31.0
+imageio-ffmpeg>=0.4.0
+numpy>=1.24.0
+einops>=0.7.0
+
+# Data loading
+webdataset>=0.2.48
+
+# Model utilities
+omegaconf>=2.3.0
+scipy>=1.10.0
+opencv-python  # cv2
+timm
+open_clip_torch
+xformers
+
+torchmetrics

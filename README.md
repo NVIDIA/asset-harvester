@@ -1,154 +1,220 @@
-# __NVIDIA_OSS__ Standard Repo Template
-
-This README file is from the NVIDIA_OSS standard repo template of [PLC-OSS-Template](https://github.com/NVIDIA-GitHub-Management/PLC-OSS-Template?tab=readme-ov-file). It provides a list of files in the PLC-OSS-Template and guidelines on how to use (clone and customize) them.
-
-**Upon completing the customization for the project repo, the repo admin should replace this README template with the project specific README file.**
-
-- Files (org-wide templates in the NVIDIA .github org repo; per-repo overrides allowed) in [PLC-OSS-Template](https://github.com/NVIDIA-GitHub-Management/PLC-OSS-Template?tab=readme-ov-file)
-
-   - Root 
-     - README.md skeleton (CTA + Quickstart + Support/Security/Governance links) 
-     - LICENSE (Apache 2.0 by default)
-        - For other licenses, see the [Confluence page](https://confluence.nvidia.com/pages/viewpage.action?pageId=788418816) for other licenses
-        - CLA.md file (delete if not using MIT or BSD licenses)
-     - CODE_OF_CONDUCT.md 
-     - SECURITY.md (vuln reporting path) 
-     - CONTRIBUTING.md (base; repo can add specifics)
-     - SUPPORT.md (Support levels/channels)
-     - GOVERNANCE.md (baseline; repo may extend)
-     - CITATION.md (for projects that need citation)
-
-   - .github/ 
-     - ISSUE_TEMPLATE/ (<https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/configuring-issue-templates-for-your-repository>)
-       - bug.yml, feature.yml, task.yml, config.yml 
-     - PULL_REQUEST_TEMPLATE.md (<https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/creating-a-pull-request-template-for-your-repository>)
-     - workflows/
-     - Note: workflow-templates/ for starter workflows should live in the org-level .github repo, not per-repo
-
-   - Repo-specific (not org-template, maintained by the team)
-     - CODEOWNERS (place at .github/CODEOWNERS or repo root)
-     - CHANGELOG.md (or RELEASE.md) 
-     - ROADMAP.md 
-     - MAINTAINERS.md 
-     - NOTICE or THIRD_PARTY_NOTICES / THIRD_PARTY_LICENSES (dependency specific)
-     - Build/package files (CMake, pyproject, Dockerfile, etc.)
-
-   - Recommended structure and hygiene
-     - docs/
-     - examples/
-     - tests/
-     - scripts/
-     - Container/dev env: Dockerfile, docker/, .devcontainer/ (optional)
-     - Build/package (language-specific):
-       - Python: pyproject.toml, setup.cfg/setup.py, requirements.txt, environment.yml
-       - C++: CMakeLists.txt, cmake/, vcpkg.json
-     - Repo hygiene: .gitignore, .gitattributes, .editorconfig, .pre-commit-config.yaml, .clang-format
+# Asset Harvester: Turning In-the-Wild Driving Logs into 3D Assets for Simulation
 
 
-## Usage of [PLC-OSS-Template](https://github.com/NVIDIA-GitHub-Management/PLC-OSS-Template?tab=readme-ov-file) for NEW NVIDIA OSS repos
 
-1. Clone the [PLC-OSS-Template](https://github.com/NVIDIA-GitHub-Management/PLC-OSS-Template?tab=readme-ov-file)
-2. Find/replace all in the clone of `___PROJECT___` and `__PROJECT_NAME__` with the name of the specific project.
-3. Inspect all files to make sure all replacements work and update text as needed
+[![Project Page](https://img.shields.io/badge/Project-Page-green)](https://research.nvidia.com/labs/sil/asset-harvester)
+[![Paper (Coming soon)](https://img.shields.io/badge/arXiv-Paper-b31b1b?logo=arxiv)](https://research.nvidia.com/labs/sil/asset-harvester)
+[![License](https://img.shields.io/badge/License-Apache--2.0-orange)](LICENSE.txt)
+[![Model](https://img.shields.io/badge/HF-Model-yellow?logo=huggingface&style=flat-square)](https://huggingface.co/nvidia/asset-harvester)[![NCore Data](https://img.shields.io/badge/NCore-0d9488?logo=database&logoColor=white&style=flat-square)](https://huggingface.co/datasets/nvidia/PhysicalAI-Autonomous-Vehicles-NCore)[![Benchmark](https://img.shields.io/badge/Benchmark-4f46e5?logoColor=white&style=flat-square)](https://huggingface.co/datasets/nvidia/NuRec-AV-Object-Benchmark)
 
-
-**What you can reuse immediately**
-- CODE_OF_CONDUCT.md
-- SECURITY.md
-- CONTRIBUTING.md (base)
-- .github/ISSUE_TEMPLATE/.yml (bug/feature/task + config.yml)
-- .github/PULL_REQUEST_TEMPLATE.md
-- Reusable workflows 
-
-**What you must customize per repo**
-- README.md: copy the skeleton and fill in product-specific details (Quickstart, Requirements, Usage, Support level, links)
-- LICENSE: check file is correct, update year, consult Confluence for alternatives https://confluence.nvidia.com/pages/viewpage.action?pageId=788418816, add CLA.md only if your license/process requires it
-- CODEOWNERS: replace <TEAM> with your GitHub team handle(s). Place at .github/CODEOWNERS (or repo root)
-- MAINTAINERS.md: list maintainers names/roles, escalation path
-- CHANGELOG.md (or RELEASE.md): track releases/changes
-- SUPPORT.md: Update for your project
-- ROADMAP.md (optional): upcoming milestones
-- NOTICE / THIRD_PARTY_NOTICES (if you ship third‑party content)
-- Build/package files (CMake/pyproject/Dockerfile/etc.), tests/, docs/, examples/, scripts/ as appropriate
-- Workflows: Edit if you need custom behavior 
+**NVIDIA**
 
 
-4. Change git origin to point to new repo and push
-5. Remove the line break below and everything above it
+### Abstract
 
-## Usage for existing NVIDIA OSS repos
+Neural scene reconstruction is a core approach for converting real driving logs into interactive environments for closed-loop autonomous driving simulation.
+However, it struggles when ego trajectories deviate significantly from observed data or when scene agents are manipulated, because these operations expose previously unseen object regions.
+To address this limitation, we present Asset Harvester, an image-to-3D model and end-to-end pipeline that converts sparse, in-the-wild observations of AV objects from real driving logs into complete, simulation-ready assets. 
+At the core of our method is SparseViewDiT, a sparse-view-to-multiview generation model developed in this work. We couple SparseViewDiT with 3D Gaussian lifting and train the model for sparse conditions via hybrid data curation, camera and occlusion augmentation, and self-distillation.
+We integrate the pipeline with NVIDIA NCore for data ingestion and with NVIDIA NuRec for asset insertion, replacement, and closed-loop simulation, enabling scalable conversion of driving logs into reusable 3D assets. We also introduce the NuRec AV Object Benchmark and perception-based metrics that are robust to small spatial misalignment for evaluating in-the-wild AV object reconstruction.
 
-1. Follow the steps above, but add the files to your existing repo and merge
 
-<!-- REMOVE THE LINE BELOW AND EVERYTHING ABOVE -->
------------------------------------------
-# [Project Title]
-One-sentence value proposition for users. Who is it for, and why it matters. 
+<p align="center">
+  <img src="docs/assets/teaser.gif" alt="Asset Harvester teaser" width="100%" style="border: none;">
+</p>
 
-# Overview
-What the project does? Why the project is useful?
-Provide a brief overview, highlighting key features or problem-solving capabilities.
+**Asset Harvester** turns real-world driving logs into complete, simulation-ready 3D assets — from just one or a few in-the-wild object views. It handles vehicles, pedestrians, riders, and other road objects, even under heavy occlusion, noisy calibration, and extreme viewpoint bias. A multiview diffusion model generates consistent novel viewpoints, and a feed-forward Gaussian reconstructor lifts them to full 3D in seconds. The result: high-fidelity 3D Gaussian splat assets ready for insertion into simulation environments. The pipeline plugs directly into NVIDIA NCore and NuRec for scalable data ingestion and closed-loop simulation.
 
-# Getting Started
-Guide users on how they can get started with the project. This should include basic installation step, quick-start examples 
+## Pipeline Overview
+
+NCore V4 Data ─► NCore Parsing ─► Multiview Diffusion + Gaussian Lifting ─► [`metadata.yaml`](docs/end_to_end_example.md#step-3-generate-external-assets-metadata-to-use-with-nvidia-omniverse-nurec-optional) (required for NuRec Object Insertion)
+
+<table>
+  <tr>
+    <th>Input View</th>
+    <th>Multiview Diffusion (2 of 16 views shown) </th>
+    <th>3D Gaussian Lifting </th>
+  </tr>
+  <tr>
+    <td><img src="docs/assets/demo_input.jpeg" width="256"></td>
+    <td><img src="docs/assets/demo_mv_concat.png" width="512"></td>
+    <td><img src="docs/assets/demo_lifting.gif" width="256"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/assets/demo_input_truck.jpeg" width="256"></td>
+    <td><img src="docs/assets/demo_mv_truck_concat.png" width="512"></td>
+    <td><img src="docs/assets/demo_lifting_truck.gif" width="256"></td>
+  </tr>
+</table>
+
+## User Guide
+
+For end-to-end asset harvesting from recorded driving sessions, see our  <b>[Full End-to-End Workflow](docs/end_to_end_example.md)</b> :sparkles: !
+
+<details>
+<summary><b>Setup</b></summary>
+
+#### Prerequisites
+
+- **conda** (Miniconda or Miniforge)
+- **NVIDIA driver** >= 570 (CUDA 12.8 compatible)
+- **GCC** 10–13 (tested with GCC 12.3)
+- **GPU VRAM** ~16 GB (add `--offload` to offload unused models to CPU for lower VRAM)
+
+> **Note:** Initial setup takes ~20 minutes to complete.
+
 ```bash
-# Option A: Package manager (pip/conda/npm/etc.)
-<copy-paste install>
-
-# Option B: Container
-docker run <image> <args>
-
-# Verify (hello world)
-<one-liner or ~10-line example>
+git clone https://github.com/NVIDIA/asset-harvester.git
+cd asset-harvester
+bash setup.sh
+conda activate asset-harvester
 ```
-# Requirements
-Include a list of pre-requisites. 
-- OS/Arch: <summary or link to full matrix>
-- Runtime/Compiler: <versions>
-- GPU/Drivers (if applicable): CUDA <ver>, driver <ver>, etc.
 
-# Usage
+Options: `bash setup.sh --env-name asset-harvester --python 3.10`
+
+#### Download Model Checkpoints
+
 ```bash
-# Minimal runnable snippet (≤20 lines)
-<code>
+pip install huggingface_hub[cli]
+hf auth login
+hf download nvidia/asset-harvester --local-dir checkpoints
 ```
-- More examples/tutorials: <link>
-- API reference: <link>
+or, manually from the [Hugging Face](https://huggingface.co/nvidia/asset-harvester).
+This places the following files in `checkpoints/`:
 
-# Performance (Optional)
-Summary of benchmarks; link to detailed results and hardware used.
+```
+checkpoints/
+├── AH_multiview_diffusion.safetensors
+├── AH_tokengs_lifting.safetensors
+├── AH_camera_estimator.safetensors
+└── AH_object_seg_jit.pt
+```
 
-## Releases & Roadmap 
-- Releases/Changelog: <link>
-- (Optional) Next milestones or link to `ROADMAP.md`.
-  
-# Contribution Guidelines
-- Start here: `CONTRIBUTING.md`
-- Code of Conduct: `CODE_OF_CONDUCT.md`
-- Development quickstart (build/test):
+</details>
+
+<details>
+<summary><b>Image-to-3D</b></summary>
+
+Try Asset Harvester on our sample data (Multiview Diffusion + Gaussian Lifting).
+Requires ~16GB VRAM. If you run into VRAM OOM issues, add `--offload_model_to_cpu` to offload unused model components to CPU:
+
 ```bash
-<clone> && <deps> && <build/test>
+export DATA_ROOT=data_samples/rectified_AV_objects/
+export CHECKPOINT_MV=checkpoints/AH_multiview_diffusion.safetensors
+export CHECKPOINT_GS=checkpoints/AH_tokengs_lifting.safetensors
+export OUTPUT_DIR=outputs/harvesting
+python3 run_inference.py \
+    --diffusion_checkpoint "${CHECKPOINT_MV}" \
+    --data_root "${DATA_ROOT}" \
+    --output_dir "${OUTPUT_DIR}" \
+    --lifting_checkpoint "${CHECKPOINT_GS}"
 ```
-## Governance & Maintainers
-- Governance: `GOVERNANCE.md`
-- Maintainers: <team/handles>
-- Labeling/triage policy: <link>
 
-## Security
-- Vulnerability disclosure: `SECURITY.md`
-- Do not file public issues for security reports.
+Or if you have a single-view image with an object in the center and a foreground mask, resize them into 512x512, and place them in a folder with this structure:
 
-## Support
-- Level: <Experimental | Maintained | Stable>
-- How to get help: Issues/Discussions/<channel link>
-- Response expectations (if any).
+```
+YOUR_IMAGE_ROOT/
+├─── YOUR_IMAGE_NAME_0
+│    ├── frame.jpeg
+│    └── mask.png
+└─── YOUR_IMAGE_NAME_1
+...
+```
 
-# Community
-Provide the channel for community communications.
+If masks are not available, you can also use our image segmentation model to
+ get mask.png from frame.jpeg stored in above structure:
 
-# References
-Provide a list of related references
+```bash
+export CHECKPOINT_SEG=checkpoints/AH_object_seg_jit.pt
+export IMAGE_ROOT=data_samples/segmented_images 
+python utils/image_segment.py \
+  --checkpoint $CHECKPOINT_SEG \
+  --image_folder $IMAGE_ROOT \
+  --frame_name frame.jpeg \
+  --mask_name mask.png
+```
 
-# License
-This project is licensed under the [NAME HERE] License - see the LICENSE.md file for details
-- License: <link>
+Check the folder `data_samples/OOD_images` for example.
+
+After data preparation, run Asset Harvester with our built-in camera estimator:
+
+```bash
+export YOUR_IMAGE_ROOT=data_samples/OOD_images
+export CHECKPOINT_MV=checkpoints/AH_multiview_diffusion.safetensors
+export CHECKPOINT_GS=checkpoints/AH_tokengs_lifting.safetensors
+export CHECKPOINT_CAM=checkpoints/AH_camera_estimator.safetensors
+export OUTPUT_DIR=outputs/harvesting_with_camera_estimate
+python3 run_inference.py \
+    --diffusion_checkpoint "${CHECKPOINT_MV}" \
+    --ahc_checkpoint "${CHECKPOINT_CAM}" \
+    --image_dir "${YOUR_IMAGE_ROOT}" \
+    --output_dir "${OUTPUT_DIR}" \
+    --lifting_checkpoint  "${CHECKPOINT_GS}"
+```
+
+</details>
+
+<details>
+<summary><b>Full End-to-End Workflow</b></summary>
+
+For the complete step-by-step pipeline walkthrough — from raw NCore driving logs through NCore parsing, multiview diffusion, Gaussian lifting, and metadata generation — see the **[End-to-End Guide](docs/end_to_end_example.md)**.
+
+</details>
+
+
+
+<details>
+<summary><b>Benchmark</b></summary>
+Coming soon.
+</details>
+
+
+
+<details>
+<summary><b>Repository Structure</b></summary>
+
+```
+asset-harvester/
+├── run_inference.py                 # Main inference entry point
+├── run.sh                           # Step 2: multiview diffusion + Gaussian lifting wrapper
+├── utils/
+│   └── generate_external_assets_metadata.py  # Step 3: metadata generation
+├── README.md
+├── setup.sh
+├── ncore_parser/                    # Step 1: NCore V4 parsing
+│   ├── run.sh          
+│   ├── pyproject.toml
+│   └── src/ncore_parser/            # NCore Data Parser
+├── models/
+│   ├── multiview_diffusion/         # Diffusion transformer + pipelines
+│   ├── tokengs/                     # TokenGS (Gaussian lifting)
+│   └── camera_estimator/            # AHC camera/object attribute estimator
+├── data_samples/                    # Bundled sample data for Quick Start
+└── checkpoints/                     # Model weights (download separately)
+```
+
+</details>
+
+## License
+
+This project is licensed under the Apache License 2.0. See individual file headers for details.
+
+## Citation
+
+If you find this work useful in your research, please consider citing:
+
+```bibtex
+@article{cao2026assetharvester,
+  title   = {Asset Harvester: Turning In-the-Wild Driving Logs into 3D Assets for Simulation},
+  author  = {Cao, Tianshi and Ren, Jiawei and Zhang, Yuxuan and Seo, Jaewoo and Huang, Jiahui and Solanki, Shikhar and Zhang, Haotian and Guo, Mingfei and Turki, Haithem and Li, Mu and Zhu, Yue and Zhang, Sipeng and Gojcic, Zan and Fidler, Sanja and Yin, Kangxue},
+  year    = {2026},
+}
+```
+
+## Disclaimer
+
+Asset Harvester is trained for the AV domain, and the results are not guaranteed in other domains.
+
+AI models generate responses and outputs based on complex algorithms and machine learning techniques, and those responses or outputs may be inaccurate or offensive. By downloading a model, you assume the risk of any harm caused by any response or output of the model. By using this software or model, you are agreeing to the terms and conditions of the license, acceptable use policy, and privacy policy as applicable.
+
+
