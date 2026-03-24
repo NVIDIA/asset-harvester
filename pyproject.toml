@@ -1,0 +1,35 @@
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    "*.egg-info",
+    ".venv",
+    "venv",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes
+    "I",      # isort (import sorting)
+    "UP",     # pyupgrade (modernize syntax)
+    "B",      # flake8-bugbear (common pitfalls)
+]
+ignore = [
+    "E501",   # line-too-long (let the formatter handle wrapping)
+    "E402",   # module-import-not-at-top (common in ML code for sys.path / env setup)
+    "E741",   # ambiguous variable name (common in math-heavy ML code)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["models", "utils", "benchmark", "patches", "ncore_parser"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
