@@ -71,7 +71,7 @@ Outputs per sample: `multiview/` (generated views), `3d_lifted/` (TokenGS-render
 
 ## Step 3: Generate External Assets Metadata to use with NVIDIA Omniverse NuRec (Optional)
 
-To use Asset Harvester with a NuRec reconstruction, generate a `metadata.yaml` file using the script below. The Step 2 output directory can then be used as input to the NuRec workflow for asset replacement and insertion, described [here](https://sw-docs.gitlab-master-pages.nvidia.com/av-sim/early-access/nurec/use-ah-assets.html).
+To use Asset Harvester with a NuRec reconstruction, generate a `metadata.yaml` file using the script below. The Step 2 output directory can then be used as input to the NuRec workflow for asset replacement and insertion, described [here](https://docs.nvidia.com/nurec/nurec/use-ah-assets.html).
 
 ```bash
 python utils/generate_external_assets_metadata.py --input-dir ./outputs/ncore_harvest
