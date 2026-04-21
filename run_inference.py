@@ -19,34 +19,26 @@ import glob
 import json
 import os
 import sys
-import time
 from functools import partial
 
-import imageio
 import numpy as np
 import torch
 import torchvision.transforms as T
 from diffusers.schedulers import DPMSolverMultistepScheduler
 from PIL import Image
-from utils.image_guard import DEFAULT_IMAGE_GUARD_THRESHOLD, ImageGuard
-from utils.mvd_farthest_pose import farthest_point_sampling
 
-# Add models/ so that multiview_diffusion and tokengs (under models/) are importable
-_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-_MODELS_PATH = os.path.join(_SCRIPT_DIR, "models")
-if _MODELS_PATH not in sys.path:
-    sys.path.insert(0, _MODELS_PATH)
-
-from multiview_diffusion.data.inference_utils import build_eval_cams
-from multiview_diffusion.data.nre_preproc import MVData, preproc
-from multiview_diffusion.pipelines import SparseViewDiTPipeline
-from multiview_diffusion.utils.model_builder import get_models
-
-from models.camera_estimator.inference import AHCEstimator
+from asset_harvester.camera_estimator.inference import AHCEstimator
+from asset_harvester.multiview_diffusion.data.inference_utils import build_eval_cams
+from asset_harvester.multiview_diffusion.data.nre_preproc import MVData, preproc
+from asset_harvester.multiview_diffusion.pipelines import SparseViewDiTPipeline
+from asset_harvester.multiview_diffusion.utils.model_builder import get_models
+from asset_harvester.utils.image_guard import DEFAULT_IMAGE_GUARD_THRESHOLD, ImageGuard
+from asset_harvester.utils.io import save_input_views, save_lifting_outputs, save_mvd_outputs
+from asset_harvester.utils.mvd_farthest_pose import farthest_point_sampling
 
 # TokenGS Gaussian lifting (enabled by default)
 try:
-    from tokengs.lifting_inference import TokengsLiftingRunner
+    from asset_harvester.tokengs.lifting_inference import TokengsLiftingRunner
 
     TOKENGS_AVAILABLE = True
 except ImportError:
@@ -54,7 +46,6 @@ except ImportError:
     TokengsLiftingRunner = None
 
 SAMPLE_PATHS_JSON = "sample_paths.json"
-
 
 
 def load_sample_paths_from_json(data_root: str):
@@ -308,10 +299,7 @@ def main(args):
         return
 
     if args.enable_image_guard and args.image_dir and not args.data_root:
-        print(
-            f"\n Running image guard on {len(sample_specs)} samples "
-            f"(threshold={args.image_guard_threshold:.2f})..."
-        )
+        print(f"\n Running image guard on {len(sample_specs)} samples (threshold={args.image_guard_threshold:.2f})...")
         guard = ImageGuard(threshold=args.image_guard_threshold)
         filtered_specs = []
         total_guard_images = 0
@@ -539,47 +527,23 @@ def run_generation(
         with open(os.path.join(output_dir, "reserved_views.json"), "w") as f:
             json.dump({"reserved_views": reserved_views_path}, f, indent=2)
 
-    # Save as video
-    images_np = [np.array(img) for img in images]
-    imageio.v2.mimwrite(f"{output_dir}/multiview.mp4", images_np, fps=5, macro_block_size=1)
-    print(f"   Saved video to {output_dir}/multiview.mp4")
+    fov = data_dict.fovs[0].item()
+    dist = data_dict.dists[0].item()
+    lwh = data_dict.lwh if hasattr(data_dict, "lwh") and data_dict.lwh is not None else None
 
-    # Save individual generated views
-    recon_dir = os.path.join(output_dir, "multiview")
-    os.makedirs(recon_dir, exist_ok=True)
-    for i, img in enumerate(images):
-        img.save(os.path.join(recon_dir, f"{i}.png"))
-    print(f"   Saved {len(images)} generated views to {recon_dir}")
+    images_np = save_mvd_outputs(images, fov, dist, lwh, output_dir)
+    print(f"   Saved {len(images)} generated views to {output_dir}/multiview")
 
-    # Save FOV and distance info
-    with open(os.path.join(recon_dir, "fov.txt"), "w") as f:
-        f.write(str(data_dict.fovs[0].item()))
-    with open(os.path.join(recon_dir, "dist.txt"), "w") as f:
-        f.write(str(data_dict.dists[0].item()))
-
-    if hasattr(data_dict, "lwh") and data_dict.lwh is not None:
-        with open(os.path.join(recon_dir, "lwh.txt"), "w") as f:
-            f.write(f"{data_dict.lwh[0]} {data_dict.lwh[1]} {data_dict.lwh[2]}")
-
-    # save input views
-    cond_view_dir = os.path.join(output_dir, "input")
-    os.makedirs(cond_view_dir, exist_ok=True)
-
-    cond_x = data_dict.x_original[data_dict.n_target:]
+    cond_x = data_dict.x_original[data_dict.n_target :]
     cond_images = torch.clamp(127.5 * cond_x + 128.0, 0, 255).to("cpu", dtype=torch.uint8)
     cond_images = [Image.fromarray(im.permute((1, 2, 0)).cpu().numpy()) for im in cond_images]
 
-    msk_x = data_dict.x_msk[data_dict.n_target:]
+    msk_x = data_dict.x_msk[data_dict.n_target :]
     msk_x = torch.clamp(127.5 * msk_x + 128.0, 0, 255).to("cpu", dtype=torch.uint8)
     msk_images = [Image.fromarray(im.permute((1, 2, 0)).cpu().numpy()) for im in msk_x]
 
-    for id, (cond_image, msk_image) in enumerate(zip(cond_images, msk_images)):
-        cond_image.save(os.path.join(cond_view_dir, f"frame_{id}.jpeg"))
-        msk_image.save(os.path.join(cond_view_dir, f"mask_{id}.png"))
-
-    print(f"   Saved {len(cond_images)} conditioning views and masks to {cond_view_dir}")
-
-
+    save_input_views(cond_images, msk_images, output_dir)
+    print(f"   Saved {len(cond_images)} conditioning views and masks to {output_dir}/input")
 
     # ---- Object-TokenGS Gaussian lifting ----
     if lifting_runner is not None:
@@ -595,16 +559,14 @@ def run_generation(
             pipeline.to("cpu")
         gc.collect()
         torch.cuda.empty_cache()
-        fov = data_dict.fovs[0].item()
-        dist = data_dict.dists[0].item()
-        lwh = data_dict.lwh if hasattr(data_dict, "lwh") and data_dict.lwh is not None else [1.0, 1.0, 1.0]
+        lift_lwh = lwh if lwh is not None else [1.0, 1.0, 1.0]
 
         print("   Running lifting...")
         t_lift_start = torch.cuda.Event(enable_timing=True)
         t_lift_end = torch.cuda.Event(enable_timing=True)
         t_lift_start.record()
         with torch.no_grad():
-            gaussians = lifting_runner.run_lifting(images_np, fov, dist, lwh)
+            gaussians = lifting_runner.run_lifting(images_np, fov, dist, lift_lwh)
         t_lift_end.record()
         torch.cuda.synchronize()
         lift_ms = t_lift_start.elapsed_time(t_lift_end)
@@ -614,28 +576,16 @@ def run_generation(
         t_render_start = torch.cuda.Event(enable_timing=True)
         t_render_end = torch.cuda.Event(enable_timing=True)
         t_render_start.record()
-        rendered_images = lifting_runner.render_orbit_views(gaussians, fov, dist, lwh)
+        rendered_images = lifting_runner.render_orbit_views(gaussians, fov, dist, lift_lwh)
         t_render_end.record()
         torch.cuda.synchronize()
         render_ms = t_render_start.elapsed_time(t_render_end)
         print(f"   Orbit render: {render_ms / 1000:.2f}s")
         rendered_ims = [im.permute(1, 2, 0).numpy() for im in rendered_images]
-        rendered_pil = [Image.fromarray(im) for im in rendered_ims]
 
-        # Save rendered views
-        lifting_dir = os.path.join(output_dir, "3d_lifted")
-        os.makedirs(lifting_dir, exist_ok=True)
-        for i, img in enumerate(rendered_pil):
-            img.save(os.path.join(lifting_dir, f"{i}.png"))
-        print(f"   Saved {len(rendered_pil)} TokenGS-rendered views to {lifting_dir}")
-
-        # Save rendered video
-        imageio.v2.mimwrite(f"{output_dir}/3d_lifted.mp4", rendered_ims, fps=5, macro_block_size=1)
-        print(f"   Saved TokenGS video to {output_dir}/3d_lifted.mp4")
-
-        # Save Gaussian PLY
         ply_path = os.path.join(output_dir, "gaussians.ply")
-        lifting_runner.save_ply(gaussians, ply_path)
+        save_lifting_outputs(rendered_ims, ply_path, gaussians, lifting_runner, output_dir)
+        print(f"   Saved {len(rendered_ims)} TokenGS-rendered views to {output_dir}/3d_lifted")
         print(f"   Saved Gaussian PLY to {ply_path}")
 
         if args.offload_model_to_cpu:

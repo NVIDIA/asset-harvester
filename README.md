@@ -58,7 +58,7 @@ For end-to-end asset harvesting from recorded driving sessions, see our  <b>[Ful
 - **conda** (Miniconda or Miniforge)
 - **NVIDIA driver** >= 570 (CUDA 12.8 compatible)
 - **GCC** 10–13 (tested with GCC 12.3)
-- **GPU VRAM** ~16 GB (add `--offload` to offload unused models to CPU for lower VRAM)
+- **GPU VRAM** ~16 GB (add `--offload_model_to_cpu` to offload unused models to CPU for lower VRAM)
 
 > **Note:** Initial setup takes ~20 minutes to complete.
 
@@ -69,7 +69,18 @@ bash setup.sh
 conda activate asset-harvester
 ```
 
-Options: `bash setup.sh --env-name asset-harvester --python 3.10`
+> **Option note:**  `bash setup.sh --env-name asset-harvester --python 3.10`
+
+The bash script `setup.sh` handles the full environment setup for this repo.
+
+If you need a manual install from a checkout, preinstall the pinned `gsplat` build first, then install the repo with the extras you need:
+
+```bash
+pip install --no-cache-dir --no-build-isolation \
+    "git+https://github.com/nerfstudio-project/gsplat.git@b60e917c95afc449c5be33a634f1f457e116ff5e"
+pip install --extra-index-url https://download.pytorch.org/whl/cu128 \
+    -e ".[ncore-parser,multiview_diffusion,tokengs,camera-estimator]"
+```
 
 #### Download Model Checkpoints
 
@@ -126,7 +137,7 @@ If masks are not available, you can also use our image segmentation model to
 ```bash
 export CHECKPOINT_SEG=checkpoints/AH_object_seg_jit.pt
 export IMAGE_ROOT=data_samples/segmented_images 
-python utils/image_segment.py \
+python -m asset_harvester.utils.image_segment \
   --checkpoint $CHECKPOINT_SEG \
   --image_folder $IMAGE_ROOT \
   --frame_name frame.jpeg \
@@ -162,9 +173,10 @@ For the complete step-by-step pipeline walkthrough — from raw NCore driving lo
 
 
 
+<a id="benchmark"></a>
 <details>
 <summary><b>Benchmark</b></summary>
-Coming soon.
+Coming soon
 </details>
 
 
@@ -174,24 +186,30 @@ Coming soon.
 
 ```
 asset-harvester/
+├── asset_harvester/
+│   ├── camera_estimator/            # Camera pose estimator package
+│   ├── multiview_diffusion/         # SparseViewDiT package
+│   ├── ncore_parser/                # NCore parser package + CLI
+│   ├── patches/                     # Compatibility patches
+│   ├── tokengs/                     # TokenGS package + main.py training entry point
+│   └── utils/                       # Shared utilities and CLI helpers
+├── benchmark/                       # Evaluation tools (coming soon)
+├── data_samples/                    # Bundled sample data for Quick Start
+├── docs/
+│   ├── assets/                      # Demo images, GIFs, and videos
+│   ├── end_to_end_example.md
+│   └── tokengs.md
+├── scripts/
+│   ├── check_license_headers.py
+│   └── run_ncore_parser.sh          # Step 1 wrapper for the parser CLI
 ├── run_inference.py                 # Main inference entry point
 ├── run.sh                           # Step 2: multiview diffusion + Gaussian lifting wrapper
-├── utils/
-│   ├── generate_external_assets_metadata.py  # Step 3: metadata.yaml for NuRec asset insertion
-│   ├── image_guard.py                        # Optional Llama Guard 3 Vision moderation on inputs
-│   └── image_segment.py                      # Object-centric segmentation / masks for frames
-├── README.md
 ├── setup.sh
-├── ncore_parser/                    # Step 1: NCore V4 parsing
-│   ├── run.sh          
-│   ├── pyproject.toml
-│   └── src/ncore_parser/            # NCore Data Parser
-├── models/
-│   ├── multiview_diffusion/         # SparseViewDiT model
-│   ├── tokengs/                     # TokenGS (Gaussian lifting)
-│   └── camera_estimator/            # Camera pose estimater for object
-├── data_samples/                    # Bundled sample data for Quick Start
-└── checkpoints/                     # Model weights (download separately)
+├── pyproject.toml
+├── CONTRIBUTING.MD
+├── LICENSE.txt
+├── THIRD_PARTY_LICENSE.txt
+└── README.md
 ```
 
 </details>
@@ -210,7 +228,7 @@ If you find this work useful in your research, please consider citing:
   author  = {Cao, Tianshi and Ren, Jiawei and Zhang, Yuxuan and 
              Seo, Jaewoo and Huang, Jiahui and Solanki, Shikhar and 
              Zhang, Haotian and Guo, Mingfei and Turki, Haithem and 
-             Li, Mu and Zhu, Yue and Zhang, Sipeng and Gojcic, Zan and 
+             Li, Muxingzi and Zhu, Yue and Zhang, Sipeng and Gojcic, Zan and
              Fidler, Sanja and Yin, Kangxue},
   year    = {2026},
 }
@@ -221,5 +239,3 @@ If you find this work useful in your research, please consider citing:
 Asset Harvester is trained for the AV domain, and the results are not guaranteed in other domains.
 
 AI models generate responses and outputs based on complex algorithms and machine learning techniques, and those responses or outputs may be inaccurate or offensive. By downloading a model, you assume the risk of any harm caused by any response or output of the model. By using this software or model, you are agreeing to the terms and conditions of the license, acceptable use policy, and privacy policy as applicable.
-
-

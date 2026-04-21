@@ -29,13 +29,13 @@ To inspect a clip before running the pipeline, use [ncore_vis](https://nvidia.gi
 Parse NCore V4 clip data (cameras, lidar, cuboid tracks) into multi-view object crops.
 
 ```bash
-bash ncore_parser/run.sh --component-store "path/to/clip.json"
+bash scripts/run_ncore_parser.sh --component-store "path/to/clip.json"
 ```
 
 Using the sample data:
 
 ```bash
-bash ncore_parser/run.sh \
+bash scripts/run_ncore_parser.sh \
     --component-store "ncore-clips/clips/2a6f330-5ab0-4e92-99d4-d19e406952f4/pai_02a6f330-5ab0-4e92-99d4-d19e406952f4.json"
 ```
 
@@ -71,10 +71,22 @@ Outputs per sample: `multiview/` (generated views), `3d_lifted/` (TokenGS-render
 
 ## Step 3: Generate External Assets Metadata to use with NVIDIA Omniverse NuRec (Optional)
 
-To use Asset Harvester with a NuRec reconstruction, generate a `metadata.yaml` file using the script below. The Step 2 output directory can then be used as input to the NuRec workflow for asset replacement and insertion, described [here](https://docs.nvidia.com/nurec/nurec/use-ah-assets.html).
+To use Asset Harvester with a NuRec reconstruction, generate a `metadata.yaml` file using the script below. The Step 2 output directory can then be used as input to the NuRec workflow for asset replacement and insertion, described [here](https://sw-docs.gitlab-master-pages.nvidia.com/av-sim/early-access/nurec/use-ah-assets.html).
 
 ```bash
-python utils/generate_external_assets_metadata.py --input-dir ./outputs/ncore_harvest
+python asset_harvester/utils/generate_external_assets_metadata.py --input-dir ./outputs/ncore_harvest
+```
+
+If you need to regenerate masks for direct image inputs, prefer the module entry point:
+
+```bash
+python -m asset_harvester.utils.image_segment --help
+```
+
+Direct file execution also works after the editable install:
+
+```bash
+python asset_harvester/utils/image_segment.py --help
 ```
 
 | Argument | Default | Description |

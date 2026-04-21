@@ -33,12 +33,12 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # ── Parse args ────────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --env-name)  ENV_NAME="$2"; shift 2 ;;
-        --python)    PYTHON_VERSION="$2"; shift 2 ;;
+        --env-name)    ENV_NAME="$2"; shift 2 ;;
+        --python)      PYTHON_VERSION="$2"; shift 2 ;;
         -h|--help)
             echo "Usage: bash setup.sh [--env-name NAME] [--python VERSION]"
-            echo "  --env-name   Conda environment name (default: asset-harvester)"
-            echo "  --python     Python version (default: 3.10)"
+            echo "  --env-name    Conda environment name (default: asset-harvester)"
+            echo "  --python      Python version (default: 3.10)"
             exit 0 ;;
         *) echo "Unknown option: $1"; exit 1 ;;
     esac
@@ -129,30 +129,23 @@ export CUDAHOSTCXX="$FOUND_CC"
 ok "Using $CC ($($CC --version | head -1))"
 
 # ── pip dependencies (ordered to respect implicit constraints) ────────
-info "Installing asset-harvester dependencies"
+# gsplat must be installed from the pinned source commit
+info "Preinstalling PyTorch CUDA wheels required for gsplat source builds"
 pip install --extra-index-url https://download.pytorch.org/whl/cu128 \
-    -r "$REPO_DIR/models/multiview_diffusion/requirements.txt"
-ok "asset-harvester deps"
+    torch==2.10.0 torchvision
+ok "PyTorch CUDA wheels"
 
-info "Installing ncore_parser"
-pip install nvidia-ncore
-pip install -e "$REPO_DIR/ncore_parser"
-ok "ncore_parser"
-
-info "Installing tokenGS (skipping gsplat — will build from source)"
-pip install -e "$REPO_DIR/models/tokengs" --no-deps
-# Install tokengs deps *except* gsplat (avoid throwaway PyPI binary)
-pip install tyro lpips packaging safetensors scikit-image tqdm roma \
-            tensorboard decord 'wandb==0.17.5' matplotlib kiui
-ok "tokenGS"
-
-# ── gsplat from source (CUDA-compatible build) ───────────────────────
 export CUDA_HOME="$CONDA_PREFIX"
 info "Building gsplat from source (commit ${GSPLAT_COMMIT:0:10}…)"
 pip install --no-cache-dir --no-build-isolation \
     "git+https://github.com/nerfstudio-project/gsplat.git@${GSPLAT_COMMIT}"
 python -c "from gsplat.cuda._backend import _C; print('gsplat CUDA ready')"
 ok "gsplat CUDA verified"
+
+info "Installing asset-harvester package with all runtime extras"
+pip install --extra-index-url https://download.pytorch.org/whl/cu128 \
+    -e "${REPO_DIR}[ncore-parser,multiview_diffusion,tokengs,camera-estimator]"
+ok "asset-harvester package"
 
 # ── Install ruff for code formatting ─────────────────────────────────
 info "Installing ruff for code formatting"

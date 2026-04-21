@@ -20,22 +20,22 @@ pip install ruff
 
 Check for lint issues:
 ```bash
-ruff check .
+ruff check asset_harvester run_inference.py scripts
 ```
 
 Auto-fix lint issues where possible:
 ```bash
-ruff check --fix .
+ruff check --fix asset_harvester run_inference.py scripts
 ```
 
 Check formatting (no changes):
 ```bash
-ruff format --check .
+ruff format --check asset_harvester run_inference.py scripts docs
 ```
 
 Apply formatting:
 ```bash
-ruff format .
+ruff format asset_harvester run_inference.py scripts docs
 ```
 
 ### License Headers
@@ -52,8 +52,8 @@ python scripts/check_license_headers.py --fix     # auto-prepend missing headers
 
 Please ensure your changes pass all three checks:
 ```bash
-ruff check .
-ruff format --check .
+ruff check asset_harvester run_inference.py scripts
+ruff format --check asset_harvester run_inference.py scripts docs
 python scripts/check_license_headers.py
 ```
 

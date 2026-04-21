@@ -118,7 +118,7 @@ if [ -n "${IMAGE_DIR}" ]; then
     fi
 elif [ ! -f "${DATA_ROOT}/sample_paths.json" ]; then
     echo "ERROR: sample_paths.json not found in ${DATA_ROOT}"
-    echo "Run ncore_parser first: bash ncore_parser/run.sh --component-store <path>"
+    echo "Run ncore-parser first: bash scripts/run_ncore_parser.sh --component-store <path>"
     exit 1
 fi
 
