@@ -5,7 +5,7 @@
 [![Project Page](https://img.shields.io/badge/Project-Page-green)](https://research.nvidia.com/labs/sil/projects/asset-harvester/)
 [![Paper](https://img.shields.io/badge/arXiv-Paper-b31b1b?logo=arxiv)](https://arxiv.org/abs/2604.18468)
 [![License](https://img.shields.io/badge/License-Apache--2.0-orange)](LICENSE.txt)
-[![HF](https://img.shields.io/badge/HF-555?logo=huggingface&logoColor=white&style=flat-square)](https://huggingface.co/spaces/nvidia/asset-harvester)[![Live Demo](https://img.shields.io/badge/Live%20Demo!-ff6f00?logoColor=white&style=flat-square)](https://huggingface.co/spaces/nvidia/asset-harvester)[![Model](https://img.shields.io/badge/Model-yellow?style=flat-square)](https://huggingface.co/nvidia/asset-harvester)[![NCore Data](https://img.shields.io/badge/NCore-0d9488?logo=database&logoColor=white&style=flat-square)](https://huggingface.co/datasets/nvidia/PhysicalAI-Autonomous-Vehicles-NCore)[![Benchmark](https://img.shields.io/badge/Benchmark-4f46e5?logoColor=white&style=flat-square)](https://huggingface.co/datasets/nvidia/NuRec-AV-Object-Benchmark)
+[![Model](https://img.shields.io/badge/HF-Models-yellow?logo=huggingface&style=flat-square)](https://huggingface.co/nvidia/asset-harvester)[![Live Demo](https://img.shields.io/badge/Live%20Demo!-ff6f00?logoColor=white&style=flat-square)](https://huggingface.co/spaces/nvidia/asset-harvester)[![NCore Data](https://img.shields.io/badge/NCore-0d9488?logo=database&logoColor=white&style=flat-square)](https://huggingface.co/datasets/nvidia/PhysicalAI-Autonomous-Vehicles-NCore)[![Benchmark](https://img.shields.io/badge/Benchmark-4f46e5?logoColor=white&style=flat-square)](https://huggingface.co/datasets/nvidia/NuRec-AV-Object-Benchmark)
 
 **NVIDIA**
 
