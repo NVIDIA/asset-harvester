@@ -19,14 +19,14 @@ Checks (non-network):
   - conda is on PATH
   - nvidia-smi is on PATH and reports driver >= 570
   - A GCC 10-13 compiler is on PATH
-  - Python >= 3.10 is on PATH
+  - Python >= 3.10 for the interpreter running this script (not a PATH lookup)
   - HuggingFace credentials are reported for information only (HF_TOKEN or a
     cached `hf auth login`). They are optional: needed only for gated repos —
     the NCore dataset, DINOv3, Llama Guard and SAM 3D Body. The
     asset-harvester checkpoints are public and never require them.
 
 Usage:
-    python scripts/validate_setup.py [--strict]
+    python3 scripts/validate_setup.py [--strict]
 
 Arguments:
     --strict      Treat warnings (e.g. a GCC outside the tested range) as
@@ -129,8 +129,18 @@ def check_driver() -> tuple[str, str]:
 
 
 def check_gcc() -> tuple[str, str]:
+    """Advisory only.
+
+    setup.sh ignores a generic PATH ``gcc`` and any CC/CXX you export. It
+    compiles a test .cu with ``nvcc -ccbin`` against a fixed /usr/bin/gcc,
+    then against the conda cross compiler resolved by name from PATH, and
+    takes the first that passes. So this check can report OK for a compiler
+    setup never uses, or warn when setup would succeed anyway. Treat it as a
+    hint about the host toolchain -- but note ``--strict`` promotes every
+    warning to a non-zero exit, so it is advisory only in the default mode.
+    """
     if shutil.which("gcc") is None:
-        return WARN, "gcc not on PATH; setup.sh may pick a conda fallback."
+        return WARN, "gcc not on PATH (advisory); setup.sh probes /usr/bin/gcc then the conda compiler."
     rc, out, _ = _run(["gcc", "-dumpversion"])
     if rc != 0:
         return WARN, "Unable to query gcc version."
@@ -141,10 +151,12 @@ def check_gcc() -> tuple[str, str]:
         return WARN, f"Unexpected gcc version '{out.strip()}'."
     if major < MIN_GCC_MAJOR or major > MAX_GCC_MAJOR:
         return WARN, (
-            f"gcc {out.strip()} is outside the tested {MIN_GCC_MAJOR}-{MAX_GCC_MAJOR} range; "
-            "setup.sh will probe for an alternative."
+            f"gcc {out.strip()} on PATH is outside the tested "
+            f"{MIN_GCC_MAJOR}-{MAX_GCC_MAJOR} range (advisory). setup.sh ignores a generic "
+            "PATH gcc: it probes /usr/bin/gcc, then the conda compiler by name, and picks "
+            "whichever nvcc accepts."
         )
-    return OK, f"gcc {out.strip()}"
+    return OK, f"gcc {out.strip()} on PATH (advisory; setup.sh selects its own compiler)"
 
 
 def _expand(path: str) -> str:

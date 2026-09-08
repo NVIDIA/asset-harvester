@@ -12,7 +12,7 @@ authoritative list.
 | Flag | Default | Purpose |
 |------|---------|---------|
 | `--diffusion_checkpoint` | *(required)* | Path to `AH_multiview_diffusion.safetensors`. |
-| `--lifting_checkpoint` | *(required unless `--skip_gs_lifting`)* | Path to `AH_tokengs_lifting.safetensors`. Omitting it does **not** skip lifting — use `--skip_gs_lifting` for multiview-only output. |
+| `--lifting_checkpoint` | *(argparse allows omission; required in practice unless `--skip_gs_lifting`)* | Path to `AH_tokengs_lifting.safetensors`. Omitting it does **not** skip lifting: TokenGS is still constructed, with randomly initialised parameters and no checkpoint loaded, so the output is not meaningful. Use `--skip_gs_lifting` for multiview-only output. |
 | `--ahc_checkpoint` | *(optional)* | Path to `AH_camera_estimator.safetensors`. **Required** when using `--image_dir` (single-view mode) — an AV camera pose is estimated from the single input. |
 | `--data_root` | — | Root of a rectified-samples directory containing `sample_paths.json` (e.g. `data_samples/rectified_AV_objects/` or `outputs/ncore_parser/`). Pass exactly one of this or `--image_dir`; it is not enforced, and `--data_root` takes precedence if both are given. |
 | `--image_dir` | — | Root of a single-view directory with `<object_id>/{frame.jpeg,mask.png}` sub-folders. Pass exactly one of this or `--data_root`; `--data_root` wins if both are set. |
@@ -24,7 +24,7 @@ authoritative list.
 | `--precision` | see `--help` | Inference precision for the diffusion / lifting models. |
 | `--enable_image_guard` | off | Run the input image-safety guard. **`--image_dir` mode only** — skipped for `--data_root` runs, with a message on stdout. |
 | `--image_guard_threshold` | see `--help` | Threshold used when `--enable_image_guard` is set. |
-| `--offload_model_to_cpu` | off | Offload unused model components to CPU to fit < 16 GB VRAM. |
+| `--offload_model_to_cpu` | off | Offload the diffusion models to CPU **while lifting runs**; lowers the lifting-stage peak, not diffusion's, so it does not by itself make a < 16 GB card sufficient. |
 
 ## `run.sh` — step-2 wrapper (diffusion + lifting)
 
@@ -62,8 +62,14 @@ ${OUTPUT_DIR}/<sample_id>/
 | `--camera-ids` | `camera_front_wide_120fov,camera_rear_right_70fov,camera_rear_left_70fov,camera_cross_left_120fov,camera_cross_right_120fov` | Comma-separated camera sensor IDs, passed through verbatim — use full sensor keys (e.g. `camera_front_wide_120fov,camera_cross_left_120fov`). |
 | `--track-ids` | all tracks | Comma-separated track IDs to process (filter to specific objects). |
 
-The module can also be invoked directly via the installed console
-script (`ncore-parser`) or `python -m asset_harvester.ncore_parser`.
+The flags above are the **wrapper**'s (`scripts/run_ncore_parser.sh`), which
+supplies defaults such as `outputs/ncore_parser`.
+
+The module can also be invoked directly via the installed console script
+(`ncore-parser`) or `python -m asset_harvester.ncore_parser` — but the direct
+CLI has **no output default** and requires its own mandatory flags (including
+the output path and the segmentation checkpoint). Run it with `--help` rather
+than copying the wrapper's flags.
 
 ## `asset_harvester.utils.image_segment` — standalone segmentation
 

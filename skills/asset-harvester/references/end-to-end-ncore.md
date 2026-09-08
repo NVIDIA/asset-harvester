@@ -21,7 +21,7 @@ AV dataset licence on its HuggingFace page, then `hf auth login` (or set
 hf download nvidia/PhysicalAI-Autonomous-Vehicles-NCore \
     --repo-type dataset \
     --local-dir ./ncore-clips \
-    --include 'clips/2a6f330-5ab0-4e92-99d4-d19e406952f4/*'
+    --include 'clips/02a6f330-5ab0-4e92-99d4-d19e406952f4/*'
 ```
 
 Each clip is a standalone NCore V4 bundle: multi-camera images, lidar,
@@ -33,7 +33,7 @@ pipeline, install and run
 
 ```bash
 bash scripts/run_ncore_parser.sh \
-    --component-store "ncore-clips/clips/2a6f330-5ab0-4e92-99d4-d19e406952f4/pai_02a6f330-5ab0-4e92-99d4-d19e406952f4.json"
+    --component-store "ncore-clips/clips/02a6f330-5ab0-4e92-99d4-d19e406952f4/pai_02a6f330-5ab0-4e92-99d4-d19e406952f4.json"
 ```
 
 Writes into `outputs/ncore_parser/` (overridable via `--output-path`),
@@ -108,8 +108,11 @@ Run the benchmark against data that ships reserved views, such as the
 released benchmark dataset below:
 
 ```bash
+BENCHMARK_RUN_OUTPUT=                               # FILL IN
+: "${BENCHMARK_RUN_OUTPUT:?set BENCHMARK_RUN_OUTPUT}"
+
 python benchmark/eval.py \
-    --output_dir <benchmark-run-output> \
+    --output_dir "$BENCHMARK_RUN_OUTPUT" \
     --eval_output_dir benchmark/eval
 ```
 
@@ -152,8 +155,10 @@ https://docs.nvidia.com/nurec/nurec/use-ah-assets.html
 
 - [ ] PPISP **disabled** when reconstructing the 3D scene in NuRec
       (otherwise inserted assets look over-saturated).
-- [ ] Source-clip cuboid dimensions reviewed — Asset Harvester does
-      not predict scale; insertion reads scale from the clip.
+- [ ] Source-clip cuboid dimensions reviewed — Asset Harvester does not
+      predict scale. The clip's cuboid `dim` flows through `object_lwh` →
+      `multiview/lwh.txt` → the `cuboids_dims` key in `metadata.yaml`,
+      which is what insertion actually reads.
 - [ ] `metadata.yaml` sits at the root of the directory handed to
       NuRec.
 
@@ -165,6 +170,6 @@ step-specific errors:
 | Stage | Symptom | Fix |
 |-------|---------|-----|
 | Parsing (step 2) | Empty `sample_paths.json` | Check `--camera-ids` / `--track-ids` against the clip manifest; defaults expect all 5 canonical cameras present. |
-| Diffusion (step 3) | OOM | Add `--offload` to `run.sh`; optionally drop `--num-steps` to 20. |
+| Diffusion (step 3) | OOM | Use a GPU with more VRAM. **`--offload` does not help here** — it only moves the diffusion models to CPU *during lifting*, so it lowers the lifting peak, not diffusion's. There is no batch-size flag, and `--num-steps` changes scheduler iterations, not peak allocation. |
 | Benchmark (step 4) | `transformers` import error | Activate `av-object-benchmark`, not `asset-harvester`. |
 | NuRec (step 5) | Asset inserted at wrong orientation | Re-run `orient_gaussians_for_nurec` with the correct `--degrees`. |

@@ -16,9 +16,12 @@ tools:
   - Write
 license: CC-BY-4.0 AND Apache-2.0
 compatibility: >-
-  Linux + conda (Miniconda/Miniforge), NVIDIA driver >= 570 (CUDA
-  12.8), GCC 10-13, CUDA toolkit 12.8 (installed by setup.sh), ~16
-  GB GPU VRAM (use `--offload_model_to_cpu` for less). The
+  Linux + conda (Miniconda/Miniforge), host Python >= 3.10 to run
+  `scripts/validate_setup.py` (setup.sh builds its own 3.10 env),
+  NVIDIA driver >= 570 (CUDA
+  12.8), GCC 10-13 (advisory; setup.sh selects its own compiler),
+  CUDA toolkit 12.8 (installed by setup.sh), ~16
+  GB GPU VRAM (`--offload_model_to_cpu` lowers the lifting-stage peak only). The
   `nvidia/asset-harvester` checkpoints are public; HF_TOKEN plus
   license acceptance is needed only for gated resources: the NCore
   dataset, and the optional DINOv3, Llama Guard and SAM 3D Body models. Egress to
@@ -76,8 +79,9 @@ upstream code lives at <https://github.com/NVIDIA/asset-harvester>.
 
 - The user wants a full-scene reconstruction (use the `nurec` skills).
 - The user has neither per-object masks nor AV-style object crops, and
-  the inputs are outside the bundled segmentation model's classes
-  (vehicles, VRUs, cyclists, road objects) — masks can otherwise be
+  the inputs are outside the bundled segmentation model's AV domain
+  (its exact classes are not enumerated here — see Limitations) — masks
+  can otherwise be
   generated with `image_segment`, see Workflow S.
 - The user wants text-to-3D, indoor scans, or non-AV imagery —
   out of distribution.
@@ -103,13 +107,16 @@ NCore V4 clip ──► NCore parsing ──► SparseViewDiT (16-view diffusion
 Single HF repo `nvidia/asset-harvester` ships four checkpoints:
 `AH_object_seg_jit.pt` (AV-object Mask2Former),
 `AH_multiview_diffusion.safetensors` (SparseViewDiT),
-`AH_camera_estimator.safetensors` (camera pose, used when calibration
-is absent), and `AH_tokengs_lifting.safetensors` (TokenGS).
+`AH_camera_estimator.safetensors` (camera pose, used when calibration is
+absent — constructed **only** for `--image_dir`; `--data_root` instead
+requires `input_views/camera.json` per sample and skips samples lacking it),
+and `AH_tokengs_lifting.safetensors` (TokenGS).
 
 ## Inputs
 
 - **image_root** — directory of per-object folders, each with
-  `frame.jpeg` (512×512) and `mask.png`. In `--image_dir` mode a folder
+  `frame.jpeg` (square recommended; `--image_dir` stretches any aspect to
+  512×512) and `mask.png`. In `--image_dir` mode a folder
   without a paired mask is skipped, so generate masks first with
   `image_segment` (Workflow S). `component_store` is a separate,
   parser-side input and does not remove this requirement.
@@ -120,7 +127,9 @@ is absent), and `AH_tokengs_lifting.safetensors` (TokenGS).
   `multiview/`, `*.mp4`) are written (default
   `outputs/`).
 - **offload_flag** — enable CPU offload (`--offload_model_to_cpu` /
-  `--offload`) when VRAM < ~16 GB.
+  `--offload`) when VRAM < ~16 GB. It offloads the diffusion models while
+  lifting runs, so it lowers the lifting peak only; it is a no-op with
+  `--skip_gs_lifting`.
 - **HF_TOKEN** — HuggingFace access token. **Not** required for the
   `nvidia/asset-harvester` checkpoints, which are public. Required,
   together with accepting the dataset licence, for the gated
@@ -132,19 +141,21 @@ is absent), and `AH_tokengs_lifting.safetensors` (TokenGS).
 
 ## Instructions
 
-1. **Validate the host.** Have the agent execute this skill's
-   `scripts/validate_setup.py` via its standard script runner —
-   e.g. `run_script("scripts/validate_setup.py")` or, from this
-   skill's own directory, `python scripts/validate_setup.py`. Paths
-   beginning `scripts/` in this document are relative to the skill
-   directory; commands like `run.sh` and `scripts/run_ncore_parser.sh`
-   are relative to the Asset Harvester checkout. It checks conda, the
-   NVIDIA driver, GCC and `HF_TOKEN`, and exits non-zero when Python,
-   conda or the driver fail. A missing GCC is a warning that still exits
-   zero; absent HuggingFace credentials are reported as OK, since they are
-   only needed for gated resources. Pass `--strict` to make warnings fail
-   too. Do **not** print `$HF_TOKEN` directly;
-   see [`references/installation.md`](references/installation.md).
+1. **Validate the host.** From this skill's own directory, run
+   `python3 scripts/validate_setup.py`. Paths beginning `scripts/` in this
+   document are relative to the skill directory; commands like `run.sh` and
+   `scripts/run_ncore_parser.sh` are relative to the Asset Harvester
+   checkout.
+
+   It fails (exit 1) on host Python < 3.10 — the interpreter *running the
+   validator*, since `setup.sh` builds its own 3.10 env — on a conda
+   failure, and on the NVIDIA driver: missing or failing `nvidia-smi`, or a
+   driver older than 570. GCC problems and an
+   unparseable driver string are warnings that still exit 0; a missing
+   `HF_TOKEN` is always reported OK, since it is only needed for gated
+   resources. Pass `--strict` to make warnings fail too. Do **not** print
+   `$HF_TOKEN` directly; see
+   [`references/installation.md`](references/installation.md).
 2. **Install.** Use the one-shot `bash setup.sh` path unless the
    user asks for a manual install. Full commands and the pinned
    `gsplat` step are in
@@ -156,12 +167,16 @@ is absent), and `AH_tokengs_lifting.safetensors` (TokenGS).
 4. **Pick the inference path:**
    - Bundled demo → Workflow Q in
      [`references/workflows.md`](references/workflows.md).
-   - Single user image (+/- mask) → Workflow S in the same file.
+   - Single user image **with a paired mask** → Workflow S in the same
+     file. Discovery skips any frame without its mask, so generate one
+     first (see Workflow S) rather than expecting mask-less input to work.
    - NCore V4 driving log → Workflow N (full walkthrough in
      [`references/end-to-end-ncore.md`](references/end-to-end-ncore.md)).
-5. **Execute with appropriate VRAM flag.** If `< 16 GB` VRAM, add
-   `--offload_model_to_cpu` (direct `run_inference.py`) or
-   `--offload` (`run.sh`).
+5. **Execute.** If you hit OOM **during lifting** on a small card, add
+   `--offload_model_to_cpu` (direct `run_inference.py`) or `--offload`
+   (`run.sh`). It moves the diffusion models to CPU while TokenGS runs, so
+   it lowers the lifting-stage peak only — it cannot make the diffusion
+   stage fit, and is a no-op with `--skip_gs_lifting`.
 6. **Validate outputs.** Confirm `multiview/` and `multiview.mp4` exist
    under the per-sample output directory. With lifting enabled (the
    default) also expect `gaussians.ply` and `3d_lifted.mp4`; with
@@ -190,7 +205,14 @@ isolation.
 ### Example 1 — Smoke-test the install with bundled samples
 
 ```bash
-python scripts/validate_setup.py          # from the skill dir; then `bash setup.sh` in the checkout
+# from skills/asset-harvester/
+python3 scripts/validate_setup.py
+```
+
+Then, in the Asset Harvester checkout, after `bash setup.sh` and
+`conda activate asset-harvester`:
+
+```bash
 python3 run_inference.py \
     --diffusion_checkpoint checkpoints/AH_multiview_diffusion.safetensors \
     --lifting_checkpoint   checkpoints/AH_tokengs_lifting.safetensors \
@@ -203,15 +225,22 @@ See Workflow Q in
 
 ### Example 2 — One masked single image → 3D asset
 
+The bundled `data_samples/OOD_images/` already contains tracked `mask.png`
+files, and `image_segment` overwrites masks in place. Segment into a copy:
+
 ```bash
+STAGING=                                 # FILL IN: a staging dir, not data_samples/
+: "${STAGING:?set STAGING}"
+cp -r data_samples/OOD_images/. "$STAGING"/
+
 python -m asset_harvester.utils.image_segment \
     --checkpoint checkpoints/AH_object_seg_jit.pt \
-    --image_folder data_samples/OOD_images
+    --image_folder "$STAGING"
 python3 run_inference.py \
     --diffusion_checkpoint checkpoints/AH_multiview_diffusion.safetensors \
     --ahc_checkpoint       checkpoints/AH_camera_estimator.safetensors \
     --lifting_checkpoint   checkpoints/AH_tokengs_lifting.safetensors \
-    --image_dir            data_samples/OOD_images \
+    --image_dir            "$STAGING" \
     --output_dir           outputs/single
 ```
 
@@ -221,7 +250,13 @@ See Workflow S in
 ### Example 3 — NCore V4 clip → NuRec-ready external assets
 
 ```bash
-bash scripts/run_ncore_parser.sh --component-store <clip.json>
+# Assign real values first. Never paste angle-bracket placeholders into a
+# shell: bash reads them as redirections, so depending on position they either
+# fail to parse outright or silently redirect instead of passing an argument.
+CLIP_JSON=                               # FILL IN: path to the clip .json
+: "${CLIP_JSON:?set CLIP_JSON}"
+
+bash scripts/run_ncore_parser.sh --component-store "$CLIP_JSON"
 bash run.sh --data-root ./outputs/ncore_parser --output-dir ./outputs/ncore_harvest
 python -m asset_harvester.utils.orient_gaussians_for_nurec \
     --input-dir ./outputs/ncore_harvest \
@@ -238,7 +273,7 @@ flow, and the NuRec PPISP caveat lives in
 
 | Script | Purpose | Usage |
 |--------|---------|-------|
-| `scripts/validate_setup.py` | Verify host meets Asset Harvester prerequisites (conda, driver, GCC, and whether `HF_TOKEN` is set — only needed for gated repos). No network access. | Invoke via the agent's `run_script` helper, or `python scripts/validate_setup.py`. |
+| `scripts/validate_setup.py` | Verify host meets Asset Harvester prerequisites (conda, driver, GCC, and whether `HF_TOKEN` is set — only needed for gated repos). No network access. | `python3 scripts/validate_setup.py` from `skills/asset-harvester/`. |
 
 ## Output Format
 
@@ -258,8 +293,10 @@ at the root of the oriented output directory.
 
 ## Prerequisites
 
-Linux (Ubuntu 22.04 tested), conda, NVIDIA driver `>= 570` (CUDA
-12.8), GCC 10–13, ~16 GB GPU VRAM, ~60 GB free disk (the four
+Linux, conda, NVIDIA driver `>= 570` (CUDA
+12.8), a GCC that `nvcc` accepts (10–13 is the tested range, but
+`setup.sh` never checks the version — it selects `/usr/bin/gcc` or the
+conda compiler by nvcc smoke test), ~16 GB GPU VRAM, ~60 GB free disk (the four
 checkpoints alone are ~12.8 GB, plus two conda envs, caches, any
 downloaded clips and per-sample outputs), and egress to
 `github.com`, `huggingface.co`, `pypi.org`,
@@ -300,26 +337,39 @@ guidance lives in
 ## Limitations
 
 - AV-only domain. Non-road / non-AV objects are out of distribution.
-- `AH_object_seg_jit.pt` is class-restricted (vehicles, VRUs,
-  cyclists, road objects). Supply your own `mask.png` for arbitrary
+- `AH_object_seg_jit.pt` is class-restricted, but the exact class names are
+  not enumerated in this repository: the JIT wrapper exposes numeric labels
+  only, and standalone segmentation ignores labels entirely and returns the
+  largest instance. Treat the AV domain (vehicles, road users, road objects)
+  as guidance, not a proven class map. Supply your own `mask.png` for arbitrary
   objects.
-- Scale is **not predicted from NCore clips** — NuRec insertion reads it
-  from the source clip's cuboid tracks, and
+- Scale is **not predicted from NCore clips**. The clip's cuboid `dim` is
+  carried through `object_lwh` into `multiview/lwh.txt`, and
+  `generate_external_assets_metadata` writes it into `metadata.yaml` under
+  the key `cuboids_dims` — that metadata file is what NuRec insertion reads,
+  not the live clip. So a wrong size is traced through
+  clip cuboid → `lwh.txt` → `cuboids_dims`. Note
   `generate_external_assets_metadata` is meant for that nested
   `<class_name>/<sample_id>/` layout — it reads `label_class` from the
   parent directory, so running it on flat `--image_dir` output records the
   output folder name (e.g. `single`) instead of an object class.
   In `--image_dir` mode the camera
   estimator does predict object dimensions, written to
-  `multiview/lwh.txt` and consumed as `cuboid_dims` by
+  `multiview/lwh.txt` and written to metadata as `cuboids_dims` by
   `generate_external_assets_metadata`.
-- 16 GB VRAM is the practical floor; lower-VRAM users must offload
-  to CPU (slower).
-- Inputs must be 512×512 square crops.
+- 16 GB VRAM is the practical floor. `--offload_model_to_cpu` helps only
+  during **lifting** — it moves the diffusion models to CPU while TokenGS
+  runs — so it does not relieve OOM in the diffusion stage and is a no-op
+  with `--skip_gs_lifting`.
+- Square crops are recommended, and the exact pixel size is not fixed.
+  `--image_dir` accepts any aspect ratio but **force-stretches** each frame
+  and mask to 512×512, so a non-square source is distorted. `--data_root`
+  instead resizes the shorter side and preserves aspect, which is where a
+  non-square input can fail downstream on tensor shape.
 - `benchmark/eval.py` needs a separately cloned conda env
   (`av-object-benchmark`) because `transformers>=4.56.0` conflicts
   with the main env's pinned `transformers==4.48.3`.
-- Linux-only install path (tested on Ubuntu 22.04 + CUDA 12.8).
+- Linux-only install path (CUDA 12.8).
 - `benchmark/install.sh` runs under `set -euo pipefail` and downloads
   `facebook/dinov3-vith16plus-pretrain-lvd1689m` unconditionally. That
   repo is gated (manual approval), so without accepted access the
@@ -333,9 +383,10 @@ guidance lives in
 | Error | Cause | Solution |
 |-------|-------|----------|
 | `gsplat` import / CUDA ABI mismatch | Installed `gsplat` from PyPI wheel instead of the pinned commit | Reinstall from the pinned source commit; see [`references/installation.md`](references/installation.md). |
-| `nvcc` "unsupported GNU version" | GCC outside 10–13 on PATH | Install GCC 12 and export `CC`/`CXX`/`CUDAHOSTCXX` before `setup.sh`. |
-| `CUDA error: out of memory` | GPU VRAM < ~16 GB | Add `--offload_model_to_cpu` (direct) or `--offload` (`run.sh`). |
-| `401 Unauthorized` from `hf download` | Hitting a gated repo (the NCore dataset, DINOv3, Llama Guard, or SAM 3D Body) without an accepted licence or token. The `nvidia/asset-harvester` checkpoints are public and need neither. | Accept that repo's licence on its HF page, then `hf auth login`. |
+| `nvcc` "unsupported GNU version" | No candidate compiler passed `setup.sh`'s nvcc probe | Install a GCC `nvcc` accepts (10–13) at `/usr/bin/gcc`. Exporting `CC`/`CXX`/`CUDAHOSTCXX` beforehand does **not** work — `setup.sh` ignores a generic PATH `gcc` and your `CC`/`CXX`, probes `/usr/bin/gcc` then the conda compiler by name, and overwrites them. |
+| `CUDA error: out of memory` **during lifting** | GPU VRAM < ~16 GB | Add `--offload_model_to_cpu` (direct) or `--offload` (`run.sh`). |
+| `401`/`403` when Llama Guard loads | `--enable-image-guard` pulls `meta-llama/Llama-Guard-3-11B-Vision` lazily through transformers at inference time, not via `hf download` | Accept that model's licence on HuggingFace and authenticate before enabling the flag. |
+| `401 Unauthorized` from `hf download` | Hitting a gated repo (the NCore dataset, DINOv3, or SAM 3D Body) without an accepted licence or token. The `nvidia/asset-harvester` checkpoints are public and need neither. | Accept that repo's licence on its HF page, then `hf auth login`. |
 
 Full matrix + teardown live in
 [`references/troubleshooting.md`](references/troubleshooting.md).

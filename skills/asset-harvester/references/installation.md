@@ -6,12 +6,39 @@ form.
 
 ## One-shot install (recommended, ~20 min)
 
+Resolve the checkout explicitly. Do not rely on the current directory: the
+skill's own instructions leave you in `skills/asset-harvester/`, where a
+bare `git clone` would nest a second repository.
+
 ```bash
-git clone https://github.com/NVIDIA/asset-harvester.git
-cd asset-harvester
-bash setup.sh                 # creates the `asset-harvester` conda env
+AH_DIR=                       # FILL IN: where the checkout is, or should go
+: "${AH_DIR:?set AH_DIR}"
+
+# Strong marker - these three only coexist in an Asset Harvester checkout.
+is_asset_harvester() {
+    [ -f "$1/setup.sh" ] && [ -f "$1/run_inference.py" ] &&
+        [ -f "$1/asset_harvester/__init__.py" ]
+}
+
+if ! is_asset_harvester "$AH_DIR"; then
+    [ -e "$AH_DIR" ] && { echo "$AH_DIR exists but is not an Asset Harvester checkout" >&2; exit 1; }
+    git clone https://github.com/NVIDIA/asset-harvester.git "$AH_DIR"
+    is_asset_harvester "$AH_DIR" || { echo "clone did not produce a valid checkout" >&2; exit 1; }
+fi
+
+# Guard the cd itself: if it fails, the shell stays in the previous directory
+# and `bash setup.sh` below would run whatever setup.sh happens to be there.
+cd -- "$AH_DIR" || exit 1
+
+bash setup.sh                 # creates *or silently reuses* `asset-harvester`
 conda activate asset-harvester
 ```
+
+> **It reuses an existing env without asking.** If a conda env of the target
+> name already exists, `setup.sh` logs `"already exists — reusing"` and then
+> installs CUDA, PyTorch, gsplat, the runtime extras and `ruff` **into that
+> env**, mutating whatever was there. Check first with `conda env list`, and
+> pass a distinct `--env-name` if you do not want an existing env changed.
 
 Optional flags: `bash setup.sh --env-name asset-harvester --python 3.10`.
 
@@ -19,7 +46,9 @@ Optional flags: `bash setup.sh --env-name asset-harvester --python 3.10`.
 `cuda-toolkit=12.8` install, nvcc host-compiler probing, PyTorch
 2.10.0 CUDA wheels, a **source build of `gsplat` at the pinned
 commit `b60e917c95afc449c5be33a634f1f457e116ff5e`**, editable
-install of `asset-harvester` with all extras, and `ruff`.
+install of `asset-harvester` with its four runtime extras
+(`ncore-parser`, `multiview_diffusion`, `tokengs`, `camera-estimator` —
+note `post_training` is defined but **not** installed), and `ruff`.
 
 ## Manual install (when `setup.sh` is not usable)
 
