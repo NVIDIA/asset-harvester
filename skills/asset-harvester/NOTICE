@@ -1,0 +1,24 @@
+NVIDIA Asset Harvester — agent skill
+
+Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+
+This directory contains an NVIDIA-authored agent skill: documentation, a
+prerequisite-validation script, and evaluation definitions for driving
+NVIDIA Asset Harvester.
+
+It was authored in NVIDIA's NuRec Skills repository
+(https://github.com/NVIDIA/nurec-skills) and carries that project's
+attribution alongside this one.
+
+Licensing within this directory:
+
+  - Code files (scripts/) are licensed under Apache-2.0. Full text in
+    LICENSE-Apache-2.0.txt.
+  - Documentation files (SKILL.md, skill-card.md, references/, evals/,
+    README.md) are licensed under dual CC-BY-4.0 AND Apache-2.0. Full
+    Creative Commons text in LICENSE-CC-BY-4.0.
+
+This directory does not vendor or redistribute third-party source code.
+External tools, packages, containers, models and datasets referenced by
+the skill are obtained from their original upstream distribution channels
+and retain their own copyright notices and license terms.
