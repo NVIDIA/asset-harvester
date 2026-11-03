@@ -77,7 +77,7 @@ upstream code lives at <https://github.com/NVIDIA/asset-harvester>.
 
 **Do NOT use this skill when:**
 
-- The user wants a full-scene reconstruction (use the `nurec` skills).
+- The user wants a full-scene reconstruction (use the [`nurec`](https://github.com/NVIDIA/nurec/blob/main/skills/nurec/SKILL.md) skills).
 - The user has neither per-object masks nor AV-style object crops, and
   the inputs are outside the bundled segmentation model's AV domain
   (its exact classes are not enumerated here — see Limitations) — masks
@@ -86,7 +86,7 @@ upstream code lives at <https://github.com/NVIDIA/asset-harvester>.
 - The user wants text-to-3D, indoor scans, or non-AV imagery —
   out of distribution.
 - The user wants to ingest raw sensor data into NCore V4 (use the
-  `ncore-data-conversion` skill first).
+  [`ncore-data-conversion`](https://github.com/NVIDIA/ncore/blob/main/skills/ncore-data-conversion/SKILL.md) skill first).
 - The user wants to re-train SparseViewDiT or TokenGS — this skill
   is install + inference only.
 - The user just wants the no-install demo: point them at
@@ -325,9 +325,9 @@ guidance lives in
   `generate_external_assets_metadata.py`.
 - [`references/troubleshooting.md`](references/troubleshooting.md)
   — extended error matrix and full teardown / disk-cleanup recipe.
-- Sibling skills: `ncore-data-conversion` (NCore V4 ingest), the `nurec` skills
+- Sibling skills: [`ncore-data-conversion`](https://github.com/NVIDIA/ncore/blob/main/skills/ncore-data-conversion/SKILL.md) (NCore V4 ingest), the [`nurec`](https://github.com/NVIDIA/nurec/blob/main/skills/nurec/SKILL.md) skills
   (NuRec scene reconstruction, `export-external-assets` packaging,
-  sample NCore clips, benchmark dataset).
+  sample NCore clips, benchmark dataset), and [`physical-ai-datasets`](https://github.com/NVIDIA/nurec/blob/main/skills/physical-ai-datasets/SKILL.md).
 - Upstream README: <https://github.com/NVIDIA/asset-harvester>
 - Project page: <https://research.nvidia.com/labs/sil/projects/asset-harvester/>
 - HF model: <https://huggingface.co/nvidia/asset-harvester>
