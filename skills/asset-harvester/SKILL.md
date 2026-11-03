@@ -86,7 +86,7 @@ upstream code lives at <https://github.com/NVIDIA/asset-harvester>.
 - The user wants text-to-3D, indoor scans, or non-AV imagery —
   out of distribution.
 - The user wants to ingest raw sensor data into NCore V4 (use the
-  `ncore` skill first).
+  `ncore-data-conversion` skill first).
 - The user wants to re-train SparseViewDiT or TokenGS — this skill
   is install + inference only.
 - The user just wants the no-install demo: point them at
@@ -325,7 +325,7 @@ guidance lives in
   `generate_external_assets_metadata.py`.
 - [`references/troubleshooting.md`](references/troubleshooting.md)
   — extended error matrix and full teardown / disk-cleanup recipe.
-- Sibling skills: `ncore` (NCore V4 ingest), the `nurec` skills
+- Sibling skills: `ncore-data-conversion` (NCore V4 ingest), the `nurec` skills
   (NuRec scene reconstruction, `export-external-assets` packaging,
   sample NCore clips, benchmark dataset).
 - Upstream README: <https://github.com/NVIDIA/asset-harvester>
