@@ -31,10 +31,7 @@ than at the repository root.
 
 ## Provenance
 
-This skill was authored in NVIDIA's NuRec skills repository
-(<https://github.com/NVIDIA/nurec-skills>, `main` at `5b9d287`,
-2026-09-02), where its
-documentation was already licensed under the same dual CC-BY-4.0 AND
+This skill's documentation was already licensed under the same dual CC-BY-4.0 AND
 Apache-2.0 terms; that licensing is carried over unchanged rather than
 re-granted.
 

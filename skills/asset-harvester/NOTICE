@@ -6,10 +6,6 @@ This directory contains an NVIDIA-authored agent skill: documentation, a
 prerequisite-validation script, and evaluation definitions for driving
 NVIDIA Asset Harvester.
 
-It was authored in NVIDIA's NuRec Skills repository
-(https://github.com/NVIDIA/nurec-skills) and carries that project's
-attribution alongside this one.
-
 Licensing within this directory:
 
   - Code files (scripts/) are licensed under Apache-2.0. Full text in
