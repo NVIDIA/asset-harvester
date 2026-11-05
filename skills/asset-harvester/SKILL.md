@@ -33,7 +33,7 @@ dependencies:
   - git
   - python3
 metadata:
-  author: NVIDIA NRS <nurec-skills@nvidia.com>
+  author: NVIDIA
   tags:
     - asset-harvester
     - autonomous-vehicles
